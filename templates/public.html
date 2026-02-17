@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAxe Public Status</title>
+    <style>
+        body { font-family: 'Segoe UI', monospace; background: #0b0b0b; color: #ccc; margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .card { background: #161616; padding: 25px; border-radius: 12px; border: 1px solid #333; margin-bottom: 20px; }
+        .accent { color: #00ff88; }
+        h1 { margin: 0; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; color:#fff }
+        .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .stat-box { background: #1f1f1f; padding: 20px; border-radius: 8px; border-left: 4px solid #00ff88; }
+        .value { font-size: 24px; font-weight: bold; color: #fff; }
+        .label { font-size: 10px; font-weight: bold; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th { text-align: left; color: #666; font-size: 10px; padding: 10px; border-bottom: 1px solid #333; }
+        td { padding: 10px; border-bottom: 1px solid #222; font-size: 14px; }
+        .online { color: #00ff88; font-weight: bold; }
+        .offline { color: #ff4444; font-weight: bold; }
+        .star { position: fixed; top: -50px; color: #ffff00; font-size: 20px; z-index: 9999; pointer-events: none; animation: shoot 2s linear forwards; }
+        @keyframes shoot { 0% { transform: translate(0, 0) rotate(0deg); opacity: 1; } 100% { transform: translate(300px, 120vh) rotate(360deg); opacity: 0; } }
+    </style>
+    <script>
+        setTimeout(() => location.reload(), 60000); // Auto refresh
+    </script>
+</head>
+<body>
+    <div class="container">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+            <h1>Orchestrator <span class="accent">// PUBLIC</span></h1>
+            <div style="text-align:right">
+                <div class="label">CURRENT STRATEGY</div>
+                <div style="color:#fff; font-weight:bold">{{ state.reason }}</div>
+            </div>
+        </div>
+
+        <div class="stat-grid">
+            <div class="stat-box">
+                <div class="label">Network Difficulty</div>
+                <div class="value">{{ state.difficulty }}</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Fleet Hashrate</div>
+                <div class="value">{{ "%.2f"|format(state.fleet_hash / 1000) }} TH/s</div>
+            </div>
+            <div class="stat-box">
+                <div class="label">Active Miners</div>
+                <div class="value">{{ state.active_miners }}</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>FLEET STATUS</h3>
+            <table>
+                <thead><tr><th>Miner ID</th><th>Status</th><th>Hashrate</th></tr></thead>
+                <tbody>
+                    {% for m in state.miners_public %}
+                    <tr>
+                        <td style="color:#888">{{ m.id }}</td>
+                        <td class="{{ 'online' if m.status == 'ONLINE' else 'offline' }}">{{ m.status }}</td>
+                        <td style="font-weight:bold">{{ "%.0f"|format(m.hashrate) }} GH/s</td>
+                    </tr>
+                    {% endfor %}
+                    <tr>
+                        <td colspan="3" style="text-align:center; padding:20px; color:#666">
+                            Fleet is operating at {{ "%.2f"|format(state.fleet_hash / 1000) }} TH/s on {{ state.current_coin }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

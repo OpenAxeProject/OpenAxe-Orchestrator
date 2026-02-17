@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenAxe Orchestrator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</head>
+<body>
+    <div id="star-layer"></div>
+    <div id="toast-container"></div>
+    <div class="container">
+        <div class="header">
+            <h1>Orchestrator <span class="accent">// {{ state.current_coin }}</span></h1>
+            <div>
+                <div style="margin-right: 20px">
+                    <div class="label">STRATEGY</div>
+                    <div style="font-size:16px; font-weight:bold; color:#fff">{{ state.reason }}</div>
+                </div>
+                <div>
+                    <div class="label">UPDATED</div>
+                    <div style="font-size:16px; font-weight:bold; color:#666">{{ state.last_update.split(' ')[1] }}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-column">
+            <div class="mc-grid">
+                <div class="stat-box">
+                    <div class="label">Difficulty</div>
+                    <div class="value">{{ state.difficulty }}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Fleet Hashrate</div>
+                    <div class="value">{{ "%.2f"|format(state.fleet_hash / 1000) }} <span style="font-size:14px; color:#666">TH/s</span></div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">{{ settings.snipe_coin }} Snipe Trend</div>
+                    <div class="value" style="color: {% if state.diff_change_pct < 0 %}#00ff88{% else %}#ff4444{% endif %}">{{ "%.2f"|format(state.diff_change_pct) }}%</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Est. Daily Cost</div>
+                    <div class="value" id="powerCostVal">${{ "%.2f"|format(state.fleet_power_cost) }}</div>
+                </div>
+                <div class="stat-box">
+                    <div class="label">Best Share</div>
+                    <div class="value" id="bestShareVal">{{ state.fleet_best_share }}</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #222; padding-bottom:15px;">
+                    <h3 style="margin:0; font-size:14px; text-transform:uppercase; color:#fff;">Hunting Matrix</h3>
+                    <div class="label">WINNER: <span style="color:#00ff88">{{ state.hunter_coin }}</span></div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Coin</th><th>Difficulty</th><th>Price (USD)</th><th>Score (Rev/Hash)</th></tr></thead>
+                        <tbody>
+                            {% for coin in ['BTC', 'BC2', 'BCH', 'BSV'] %}
+                            {% set stats = state.market_stats.get(coin, {}) %}
+                            {% set is_winner = (state.hunter_coin == coin) %}
+                            {% set is_disabled = stats.get('disabled', false) %}
+                            <tr class="matrix-row {{ 'winner' if is_winner else '' }} {{ 'disabled' if is_disabled else '' }}">
+                                <td style="font-weight:bold; display:flex; align-items:center; gap:8px;">
+                                    {% if is_winner %}<div class="spinner" style="border-width:2px; width:10px; height:10px;"></div>{% endif %}
+                                    {{ coin }}
+                                </td>
+                                <td>{{ "%.2f"|format(stats.diff/1e9) }} G</td>
+                                <td>${{ "%.2f"|format(stats.price) }}</td>
+                                <td>{{ "%.3f"|format(stats.score) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #222; padding-bottom:15px;">
+                    <h3 style="margin:0; font-size:14px; text-transform:uppercase; color:#fff;">Farming Matrix</h3>
+                    <div class="label">MODE: <span style="color:#00ff88">{{ state.farmer_coin }}</span></div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>Coin</th><th>Difficulty</th><th>Price (USD)</th><th>Score</th></tr></thead>
+                        <tbody>
+                            {% for coin in ['DGB', 'PPC', 'FB'] %}
+                            {% set stats = state.market_stats.get(coin, {}) %}
+                            {% set is_active = (state.farmer_coin == coin) %}
+                            {% set is_disabled = stats.get('disabled', false) %}
+                            <tr class="matrix-row {{ 'winner' if is_active else '' }} {{ 'disabled' if is_disabled else '' }}">
+                                <td style="font-weight:bold; display:flex; align-items:center; gap:8px;">
+                                    {% if is_active %}<div class="spinner" style="border-width:2px; width:10px; height:10px;"></div>{% endif %}
+                                    {{ coin }}
+                                </td>
+                                <td>{{ "%.2f"|format(stats.diff/1e9 if coin=='FB' else stats.diff/1e6) }} {{ 'G' if coin=='FB' else 'M' }}</td>
+                                <td>${{ "%.4f"|format(stats.price) }}</td>
+                                <td>{{ "%.3f"|format(stats.score) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px">
+                    <h3 style="margin:0; font-size:14px; text-transform:uppercase; color:#fff;">Active Fleet ({{ state.active_miners }})</h3>
+                    <div>
+                        <input type="text" id="subnetInput" value="192.168.0.0/24" style="background:#222; color:#fff; border:1px solid #444; padding:8px; width:160px; border-radius:4px; font-size:12px;">
+                        <button id="scanBtn" class="btn btn-green" onclick="scan()" style="margin-left:5px">
+                            <div id="scanSpinner" class="spinner hidden"></div>
+                            <span id="scanText">SCAN LAN</span>
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>IP Address</th><th>Status</th><th>Realtime Hash</th><th>Stratum User</th><th>Action</th></tr></thead>
+                        <tbody>
+                            {% for m in context.miners %}
+                            <tr>
+                                <td style="font-family:monospace; color:#00ff88">{{ m.ip }}</td>
+                                <td>
+                                    {% if m.stats and m.stats.connected %}
+                                        {% if m.stats.zombie %}
+                                            <span class="zombie">ZOMBIE 🧟‍♂️</span>
+                                        {% else %}
+                                            <span class="online">ONLINE</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="offline">OFFLINE</span>
+                                    {% endif %}
+                                </td>
+                                <td style="font-weight:bold">
+                                    {% if m.stats and m.stats.connected %}
+                                        {{ "%.0f"|format(m.stats.hashRate) }} GH/s
+                                    {% else %}
+                                        <span style="color:#666">-</span>
+                                    {% endif %}
+                                </td>
+                                <td style="font-family:monospace; font-size:12px; color:#888">
+                                    {% if m.stats and m.stats.connected %}
+                                        {{ m.stats.stratumUser }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td><button class="btn btn-red" style="padding:4px 10px; font-size:10px" onclick="reboot('{{ m.ip }}')">REBOOT</button></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-column">
+            <div class="card">
+                <h3 style="margin-top:0; font-size:14px; color:#fff; margin-bottom:15px; text-transform:uppercase">Strategy & Risk</h3>
+                <div class="toggle-row">
+                    <label style="font-size:12px; font-weight:bold">Smart Hedge (Auto)</label>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="smartHedge" {% if settings.smart_hedge %}checked{% endif %} onchange="saveSettings()">
+                        <span class="slider-round"></span>
+                    </label>
+                </div>
+                <div style="border-top:1px solid #333; margin:10px 0; padding-top:10px;">
+                    <div class="toggle-row">
+                        <label style="font-size:12px; font-weight:bold; color:#00ff88">MANUAL OVERRIDE</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="manualMode" onchange="handleManualToggle()" {% if settings.manual_mode %}checked{% endif %}>
+                            <span class="slider-round"></span>
+                        </label>
+                    </div>
+                    <div id="manualControls" style="display: {% if settings.manual_mode %}block{% else %}none{% endif %}; background:#1a1a1a; padding:10px; border-radius:6px; margin-bottom:10px;">
+                        <div style="margin-bottom:8px">
+                            <label style="font-size:9px; color:#777; display:block; margin-bottom:4px">FORCE HUNTER</label>
+                            <select id="manualHunter" class="settings-input" style="padding:5px" onchange="saveSettings()">
+                                {% for c in ['BTC','BCH','BSV','BC2'] %}
+                                <option value="{{c}}" {% if settings.manual_hunter == c %}selected{% endif %}>{{c}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label style="font-size:9px; color:#777; display:block; margin-bottom:4px">FORCE FARMER</label>
+                            <select id="manualFarmer" class="settings-input" style="padding:5px" onchange="saveSettings()">
+                                {% for c in ['DGB','PPC','FB','MD'] %}
+                                <option value="{{c}}" {% if settings.manual_farmer == c %}selected{% endif %}>{{c}}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div style="margin-top:15px">
+                    <div style="display:flex; justify-content:space-between; font-size:10px; color:#888; margin-bottom:5px">
+                        <span>FARMERS</span>
+                        <span id="riskVal" style="color:#00ff88; font-weight:bold">{{ settings.risk_level }}% Hunters</span>
+                        <span>HUNTERS</span>
+                    </div>
+                    <div class="slider-container">
+                        <input type="range" min="0" max="100" value="{{ settings.risk_level }}" id="riskSlider" oninput="handleSliderChange(this.value)" onchange="saveSettings()">
+                    </div>
+                </div>
+                <div style="margin-top:10px; padding-top:10px; border-top:1px solid #333">
+                    <label style="font-size:10px; font-weight:bold; color:#888; display:block; margin-bottom:5px">SNIPE TARGET COIN</label>
+                    <select id="snipeCoin" class="settings-input" style="padding:5px" onchange="saveSettings()">
+                        {% for c in ['BTC','BCH','BSV','BC2'] %}
+                        <option value="{{c}}" {% if settings.snipe_coin == c %}selected{% endif %}>{{c}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="border-top:1px solid #333; margin-top:15px; padding-top:10px;">
+                    <label style="font-size:10px; font-weight:bold; color:#888; letter-spacing:1px; margin-bottom:8px; display:block;">COIN AVAILABILITY</label>
+                    <div class="chip-container">
+                        {% for coin in ['BTC','BC2','BCH','BSV','DGB','PPC','FB','MD'] %}
+                        <div class="chip {% if coin not in settings.disabled_coins %}active{% endif %}" 
+                             id="chip-{{coin}}" 
+                             data-coin="{{coin}}" 
+                             onclick="toggleCoin('{{coin}}')">
+                            {{coin}}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" style="border-left: 4px solid {% if state.alerts|length > 0 %}#ff4444{% else %}#00ff88{% endif %};">
+                <h3 style="margin-top:0; font-size:14px; margin-bottom:10px; text-transform:uppercase; color:#fff">Fleet Health</h3>
+                {% if state.alerts|length > 0 %}
+                    <div style="margin-bottom:10px">
+                        {% for alert in state.alerts %}
+                        <div style="color:#ff4444; font-size:11px; margin-bottom:2px">⚠️ {{ alert }}</div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div style="color:#666; font-size:11px; font-style:italic; margin-bottom:10px">All systems nominal.</div>
+                {% endif %}
+                <div class="input-group" style="margin-bottom:5px">
+                    <label>MAX TEMP (°C)</label>
+                    <input class="settings-input" type="number" id="tempLimit" value="{{ settings.temp_limit }}">
+                </div>
+                <div class="input-group">
+                    <label>RUNT HASH (GH/s)</label>
+                    <input class="settings-input" type="number" id="hashThreshold" value="{{ settings.hash_threshold }}">
+                </div>
+                <div class="input-group" style="margin-top:15px; border-top:1px dashed #333; padding-top:15px">
+                    <label style="color:#00ff88">TUNING MODE</label>
+                    <select id="tuningMode" class="settings-input" onchange="saveSettings()">
+                        <option value="eco" {% if settings.tuning_mode == 'eco' %}selected{% endif %}>🌱 ECO (485M/1100mV)</option>
+                        <option value="stock" {% if settings.tuning_mode == 'stock' %}selected{% endif %}>⚖️ STOCK (525M/1150mV)</option>
+                        <option value="turbo" {% if settings.tuning_mode == 'turbo' %}selected{% endif %}>🚀 TURBO (625M/1150mV)</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>POWER COST ($/kWh)</label>
+                    <input class="settings-input" type="number" step="0.01" id="powerCostInput" value="{{ settings.power_cost_kwh }}" onchange="saveSettings()">
+                </div>
+            </div>
+
+            <div class="card" style="background: #1f1f1f; border-left: 4px solid #ffd700;">
+                <h3 style="margin-top:0; font-size:14px; color:#ffd700; margin-bottom:15px; text-transform:uppercase">🏆 Blocks Found</h3>
+                <div style="display:flex; justify-content:space-between; margin-bottom:10px">
+                    <span class="label">Mining Dutch</span>
+                    <span class="value" style="font-size:20px">{{ state.blocks_found.md }}</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span class="label">Local / Solo</span>
+                    <span class="value" style="font-size:20px">{{ state.blocks_found.local }}</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="margin-top:0; font-size:12px; color:#666; margin-bottom:15px; text-transform:uppercase">Logic Stream</h3>
+                <div id="logic-log">Loading stream...</div>
+            </div>
+            
+            <div class="card">
+                <h3 style="margin-top:0; font-size:14px; color:#fff; margin-bottom:20px; border-bottom:1px solid #333; padding-bottom:10px">SYSTEM CONFIG</h3>
+                <details>
+                    <summary>NOTIFICATIONS & API KEYS</summary>
+                    <div class="input-group">
+                        <label>NTFY TOPIC</label>
+                        <input class="settings-input" id="ntfyTopic" value="{{ settings.ntfy_topic }}" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>MINING DUTCH API KEY</label>
+                        <input class="settings-input" type="password" id="mdApiKey" value="{{ settings.mining_dutch_api_key }}" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>NOSTR PRIV</label>
+                        <input class="settings-input" type="password" id="nostrPriv" value="{{ settings.nostr_privkey }}" autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>NOSTR PUB</label>
+                        <input class="settings-input" id="nostrPub" value="{{ settings.nostr_recipient_pubkey }}" autocomplete="off">
+                    </div>
+                    <div style="margin-top:15px; border-top:1px dashed #333; padding-top:10px">
+                        <div class="toggle-row">
+                            <label style="font-size:11px">OFFLINE ALERTS</label>
+                            <label class="toggle-switch"><input type="checkbox" id="notifOffline" {% if settings.notify_offline %}checked{% endif %}><span class="slider-round"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <label style="font-size:11px">SWITCH ALERTS</label>
+                            <label class="toggle-switch"><input type="checkbox" id="notifSwitch" {% if settings.notify_switch %}checked{% endif %}><span class="slider-round"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <label style="font-size:11px">ZOMBIE ALERTS</label>
+                            <label class="toggle-switch"><input type="checkbox" id="notifZombie" {% if settings.notify_zombie %}checked{% endif %}><span class="slider-round"></span></label>
+                        </div>
+                        <div class="toggle-row">
+                            <label style="font-size:11px">BLOCK FOUND ALERTS</label>
+                            <label class="toggle-switch"><input type="checkbox" id="notifBlock" {% if settings.notify_block_found %}checked{% endif %}><span class="slider-round"></span></label>
+                        </div>
+                    </div>
+                </details>
+                <details>
+                    <summary>POOL CONFIGURATION</summary>
+                    {% for coin in ['BTC', 'BC2', 'BCH', 'BSV', 'DGB', 'PPC', 'FB'] %}
+                    <div style="margin-bottom:15px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px">
+                            <label style="color:#fff; font-weight:bold">{{ coin }}</label>
+                            <label style="font-size:9px; color:#555">STRATUM + USER</label>
+                        </div>
+                        <input class="settings-input" type="text" id="{{coin.lower()}}Url" value="{{ settings.pools.get(coin, {}).get('url', '') }}" placeholder="stratum+tcp://..." autocomplete="off" style="margin-bottom:5px">
+                        <input class="settings-input" type="text" id="{{coin.lower()}}User" value="{{ settings.pools.get(coin, {}).get('user', '') }}" placeholder="WalletAddress.Worker" autocomplete="off">
+                    </div>
+                    {% endfor %}
+                    <div style="margin-bottom:15px; border-top:1px dashed #333; padding-top:15px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom:5px">
+                            <label style="color:#ffd700; font-weight:bold">MINING DUTCH (MD)</label>
+                            <label style="font-size:9px; color:#555">SPECIAL CONFIG</label>
+                        </div>
+                        <input class="settings-input" type="text" id="mdUrl" value="{{ settings.pools.get('MD', {}).get('url', '') }}" placeholder="stratum+tcp://..." autocomplete="off" style="margin-bottom:5px">
+                        <input class="settings-input" type="text" id="mdUser" value="{{ settings.pools.get('MD', {}).get('user', '') }}" placeholder="Username" autocomplete="off" style="margin-bottom:5px">
+                        <input class="settings-input" type="password" id="mdPass" value="{{ settings.pools.get('MD', {}).get('pass', '') }}" placeholder="Password (e.g. d=1024)" autocomplete="off">
+                    </div>
+                </details>
+                <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px">
+                    <button class="btn btn-green" onclick="saveSettings()">SAVE SETTINGS</button>
+                    <button class="btn" style="border:1px dashed #555" onclick="applyToFleet()">FORCE PUSH TO FLEET</button>
+                    <a href="#" onclick="if(confirm('Factory Reset?')) fetch('/api/reset_settings', {method:'POST'}).then(r=>location.reload())" style="text-align:center; color:#444; font-size:10px; text-decoration:none; margin-top:10px">FACTORY RESET SYSTEM</a>
+                </div>
+                <div style="margin-top:20px; text-align:center">
+                    <a href="/public" target="_blank" style="color:#00ff88; font-size:12px; text-decoration:none">🔗 OPEN PUBLIC STATUS PAGE</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

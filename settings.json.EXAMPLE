@@ -1,0 +1,74 @@
+{
+  "ntfy_server": "https://ntfy.sh",
+  "ntfy_topic": "openaxe_orchestrator_51410",
+  "notify_offline": true,
+  "notify_switch": true,
+  "notify_zombie": true,
+  "notify_block_found": true,
+  "auto_update_miners": true,
+  "temp_limit": 75,
+  "hash_threshold": 300,
+  "risk_level": 50,
+  "smart_hedge": true,
+  "manual_mode": false,
+  "manual_hunter": "BC2",
+  "manual_farmer": "PPC",
+  "snipe_coin": "BCH",
+  "tuning_mode": "turbo",
+  "power_cost_kwh": 0.2,
+  "disabled_coins": [
+    "BSV",
+    "FB",
+    "MD"
+  ],
+  "mining_dutch_api_key": "MINING_DUTCH_API_KEY",
+  "whatsonchain_api_key": "WHATSONCHAIN_API_KEY",
+  "nostr_privkey": "NOSTR_BOT_PRIVATE_KEY_HEX",
+  "nostr_recipient_pubkey": "NOSTR_RECIPIENT_PROFILE_PUBKEY_HEX",
+  "pools": {
+    "BC2": {
+      "url": "bc2poolurl:port",
+      "user": "wallet",
+      "pass": "x"
+    },
+    "BTC": {
+      "url": "btcpoolurl:port",
+      "user": "wallet",
+      "pass": "x"
+    },
+    "BCH": {
+      "url": "bchurl:port",
+      "user": "wallet",
+      "pass": "x"
+    },
+    "BSV": {
+      "url": "bsvwallet:port",
+      "user": "wallet",
+      "pass": "x"
+    },
+    "DGB": {
+      "url": "dgburl:port",
+      "user": "wallet",
+      "pass": "x"
+    },
+    "PPC": {
+      "url": "peercoinurl:port",
+      "user": "wallet",
+      "pass": "x"
+    },
+    "FB": {
+      "url": "fburl:port",
+      "user": "",
+      "pass": "x"
+    },
+    "MD": {
+      "url": "americas.mining-dutch.nl:9996",
+      "user": "MD_USER",
+      "pass": "MD_PASS"
+    }
+  },
+  "nostr_relays": [
+    "wss://nostr.mom/",
+    "wss://relay.damus.io/"
+  ]
+}

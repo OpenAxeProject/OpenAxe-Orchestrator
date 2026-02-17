@@ -1,0 +1,59 @@
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.env
+.venv
+
+# Flask specific
+instance/
+.webassets-cache
+
+# Project Specific - CRITICAL: Contains API Keys & Secrets
+settings.json
+miners.json
+
+# Logs and databases
+*.log
+*.sqlite
+
+# IDE settings
+.vscode/
+.idea/
+
+# Docker
+docker-compose.override.yml
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Temporary files mentioned in your directory
+working
+derp
+*.working
+old

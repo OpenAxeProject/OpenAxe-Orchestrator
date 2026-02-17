@@ -1,0 +1,9 @@
+services:
+  orchestrator:
+    build: .
+    container_name: openaxe-orchestrator
+    ports:
+      - "5404:5000"
+    volumes:
+      - ./:/app
+    restart: always
