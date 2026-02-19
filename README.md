@@ -102,7 +102,7 @@ Located in the "Fleet Health" card.
 
 * **🌱 Eco**: 485 MHz / 1100 mV (Max Efficiency, Low Heat).
 * **⚖️ Stock**: 525 MHz / 1150 mV (Factory Balance).
-* **🚀 Turbo**: 625 MHz / 1150 mV (Max Hashrate, Higher Power).
+* **🚀 Turbo**: 625 MHz / 1250 mV (Max Hashrate, Higher Power).
 * *Note: Changing this sends an API command to every miner in the fleet. Allow 30-60 seconds for them to restart and apply.*
 
 ### 4. Coin Availability

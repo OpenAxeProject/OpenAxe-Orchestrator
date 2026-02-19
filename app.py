@@ -76,7 +76,7 @@ DEFAULT_SETTINGS = {
 TUNING_PROFILES = {
     "eco":   {"frequency": 485, "coreVoltage": 1100},
     "stock": {"frequency": 525, "coreVoltage": 1150},
-    "turbo": {"frequency": 625, "coreVoltage": 1150}
+    "turbo": {"frequency": 625, "coreVoltage": 1250}
 }
 
 def deep_merge(base, update):
