@@ -37,6 +37,7 @@ ZOMBIE_THRESHOLD_MINS = 10
 
 LOGIC_LOG = deque(maxlen=50)
 LOOP_TRIGGER = threading.Event()
+NOSTR_QUEUE = queue.Queue()
 
 DEFAULT_SETTINGS = {
     "ntfy_server": "https://ntfy.sh",
@@ -74,9 +75,9 @@ DEFAULT_SETTINGS = {
 }
 
 TUNING_PROFILES = {
-    "eco":   {"frequency": 485, "coreVoltage": 1100},
-    "stock": {"frequency": 525, "coreVoltage": 1150},
-    "turbo": {"frequency": 625, "coreVoltage": 1250}
+    "BM1368": {"eco": {"frequency": 485, "coreVoltage": 1100}, "stock": {"frequency": 525, "coreVoltage": 1150}, "turbo": {"frequency": 575, "coreVoltage": 1250}},
+    "BM1370": {"eco": {"frequency": 485, "coreVoltage": 1100}, "stock": {"frequency": 525, "coreVoltage": 1150}, "turbo": {"frequency": 625, "coreVoltage": 1250}},
+    "default": {"eco": {"frequency": 485, "coreVoltage": 1100}, "stock": {"frequency": 525, "coreVoltage": 1150}, "turbo": {"frequency": 550, "coreVoltage": 1200}}
 }
 
 def deep_merge(base, update):
@@ -137,7 +138,7 @@ state = {
     "fleet_power_cost": 0.0,
     "active_miners": 0,
     "market_stats": {},
-    "blocks_found": {"md": 0, "local": 0},
+    "blocks_found": 0,
     "alerts": [],
     "last_snipe_coin": "BC2"
 }
@@ -291,6 +292,7 @@ def push_config_to_miner(ip, pool_config):
     try:
         try:
             r = requests.get(f"http://{ip}/api/system/info", timeout=3).json()
+            asic_model = r.get('ASICModel', 'default')
             hostname = r.get('hostname', 'worker')
             curr_url = str(r.get('stratumURL', '')).replace('stratum+tcp://', '').strip()
             curr_port = int(r.get('stratumPort', 3333))
@@ -305,7 +307,9 @@ def push_config_to_miner(ip, pool_config):
             user = f"{user}.{hostname}"
         
         mode = DB['settings'].get('tuning_mode', 'stock')
-        profile = TUNING_PROFILES.get(mode, TUNING_PROFILES['stock'])
+        device_profiles = TUNING_PROFILES.get(asic_model, TUNING_PROFILES['default'])
+        profile = device_profiles.get(mode, device_profiles['stock'])
+        
         target_freq = profile['frequency']
         target_volt = profile['coreVoltage']
 
@@ -466,6 +470,7 @@ def fleet_monitor():
     while True:
         total_hash = 0
         total_watts = 0
+        total_blocks = 0
         active = 0
         global_best_share = 0
         alerts = []
@@ -479,6 +484,8 @@ def fleet_monitor():
                 curr_temp = r.get('temp', 0); curr_hash = r.get('hashRate', 0)
                 curr_power = r.get('power', 15) 
                 curr_shares = r.get('sharesAccepted', 0)
+                curr_blocks = r.get('blockFound', 0)
+                asic_model = r.get('ASICModel', 'Unknown')
                 
                 last_shares = m.get('last_shares', 0)
                 last_time = m.get('last_time', time.time())
@@ -511,10 +518,12 @@ def fleet_monitor():
                     'power': curr_power,
                     'zombie': is_zombie,
                     'stratumUser': r.get('stratumUser', ''),
-                    'sharesAccepted': curr_shares
+                    'sharesAccepted': curr_shares,
+                    'asicModel': asic_model
                 }
                 total_hash += curr_hash
                 total_watts += curr_power
+                total_blocks += curr_blocks
                 active += 1
             except: 
                 if not m.get('offline_alert_sent', False):
@@ -528,6 +537,7 @@ def fleet_monitor():
         state['fleet_best_share'] = human_readable_diff(global_best_share)
         state['active_miners'] = active
         state['alerts'] = alerts
+        state['blocks_found'] = total_blocks
         save_json(DATA_FILE, DB['miners'])
         time.sleep(15)
 
@@ -602,6 +612,7 @@ def api_update_fleet():
 def inject_db(): return dict(context=DB)
 
 if __name__ == '__main__':
+    if NOSTR_AVAILABLE: threading.Thread(target=nostr_worker, daemon=True).start()
     threading.Thread(target=fleet_monitor, daemon=True).start()
     threading.Thread(target=logic_loop, daemon=True).start()
     app.run(host='0.0.0.0', port=5000)

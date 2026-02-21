@@ -137,6 +137,7 @@
                                 <td style="font-weight:bold">
                                     {% if m.stats and m.stats.connected %}
                                         {{ "%.0f"|format(m.stats.hashRate) }} GH/s
+                                        <div style="font-size:10px; color:#888; font-weight:normal; margin-top:2px;">{{ m.stats.asicModel }}</div>
                                     {% else %}
                                         <span style="color:#666">-</span>
                                     {% endif %}
@@ -251,7 +252,7 @@
                     <select id="tuningMode" class="settings-input" onchange="saveSettings()">
                         <option value="eco" {% if settings.tuning_mode == 'eco' %}selected{% endif %}>🌱 ECO (485M/1100mV)</option>
                         <option value="stock" {% if settings.tuning_mode == 'stock' %}selected{% endif %}>⚖️ STOCK (525M/1150mV)</option>
-                        <option value="turbo" {% if settings.tuning_mode == 'turbo' %}selected{% endif %}>🚀 TURBO (625M/1250mV)</option>
+                        <option value="turbo" {% if settings.tuning_mode == 'turbo' %}selected{% endif %}>🚀 TURBO (Hex: 575M / Gamma: 625M)</option>
                     </select>
                 </div>
                 <div class="input-group">
@@ -262,13 +263,9 @@
 
             <div class="card" style="background: #1f1f1f; border-left: 4px solid #ffd700;">
                 <h3 style="margin-top:0; font-size:14px; color:#ffd700; margin-bottom:15px; text-transform:uppercase">🏆 Blocks Found</h3>
-                <div style="display:flex; justify-content:space-between; margin-bottom:10px">
-                    <span class="label">Mining Dutch</span>
-                    <span class="value" style="font-size:20px">{{ state.blocks_found.md }}</span>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                    <span class="label">Local / Solo</span>
-                    <span class="value" style="font-size:20px">{{ state.blocks_found.local }}</span>
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span class="label">Total Fleet Blocks</span>
+                    <span class="value" style="font-size:24px; color:#ffd700;">{{ state.blocks_found }}</span>
                 </div>
             </div>
 

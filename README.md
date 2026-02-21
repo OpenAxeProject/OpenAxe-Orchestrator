@@ -98,11 +98,14 @@ Toggle this switch to bypass the automated logic.
 
 ### 3. Tuning & Power
 
-Located in the "Fleet Health" card.
+> Note: I only have access to the Gama and Supra Hex currently. These overclocking profiles are built for those devices. If you have a device that you would like added to the list of profiles, please provide a dump of the AxeAPI found at ``http://URLMINERIP/api/system/info`` in a pull request so they can be examined and added. USE CAUTION if you do not have a Gama or Supra Hex at this time.
+
+
+Located in the "Fleet Health" card. This is currently set to work with the type of ASIC chip you have but known to work with the Gama and Supra Hex:
 
 * **🌱 Eco**: 485 MHz / 1100 mV (Max Efficiency, Low Heat).
 * **⚖️ Stock**: 525 MHz / 1150 mV (Factory Balance).
-* **🚀 Turbo**: 625 MHz / 1250 mV (Max Hashrate, Higher Power).
+* **🚀 Turbo**: 625 MHz (575MHz for Supra Hex) / 1250 mV (Max Hashrate, Higher Power).
 * *Note: Changing this sends an API command to every miner in the fleet. Allow 30-60 seconds for them to restart and apply.*
 
 ### 4. Coin Availability
